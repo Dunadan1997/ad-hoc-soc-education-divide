@@ -122,6 +122,79 @@ merged_data_shp$pol_influence <-
 merged_data_shp$pol_ideology <-
   ifelse(merged_data_shp$`p$$p10` < 0, NA, merged_data_shp$`p$$p10`)
 
+
+
+merged_data_shp$pol_prtynxtelec <-
+  factor(
+    merged_data_shp$`p$$p19`,
+    levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,50,51,52,20,21,22,23,24),
+    labels = c(
+      "PRD Swiss Radical-Democratic Party",
+      "PDC Swiss Christian-Democrat Party",
+      "PSS Swiss Socialist Party",
+      "UDC Democratic Union of the Centre",
+      "PLS Swiss Liberal Party",
+      "AdI Independent Alliance",
+      "PEV Swiss Pop Evang Party/Swiss Evang Party",
+      "PCS Swiss Christian Social Party",
+      "PST Swiss Labour Party/Popular Labour Party/Solidarity",
+      "AVF Socialist Green Alternative and Women Groups",
+      "PES Swiss Ecology Party",
+      "DS Swiss Democrats (former National Action)",
+      "UDF Federal Democratic Union",
+      "PSL Swiss Freedom Party  (former Swiss Car Party )",
+      "Lega dei ticinesi",
+      "Other Party",
+      "vote for a candidate, not for a party",
+      "for no party",
+      "wouldn't vote",
+      "GL Green liberals",
+      "BDP Conservative Democratic Party",
+      "PLR Les Libéraux-Radicaux",
+      "MCG Mouvement Citoyens Genevois",
+      "The Centre"
+    )
+  )
+  
+merged_data_shp$pol_prtynxtelec_recoded <- 
+  fct_collapse(
+    merged_data_shp$pol_prtynxtelec,
+    rightwing_parties = c(
+      "PRD Swiss Radical-Democratic Party",
+      "UDC Democratic Union of the Centre",
+      "DS Swiss Democrats (former National Action)",
+      "UDF Federal Democratic Union",
+      "PSL Swiss Freedom Party  (former Swiss Car Party )",
+      "Lega dei ticinesi",
+      "BDP Conservative Democratic Party",
+      "PLR Les Libéraux-Radicaux",
+      "MCG Mouvement Citoyens Genevois",
+      "PLS Swiss Liberal Party"
+    ),
+    leftwing_parties = c(
+      "PSS Swiss Socialist Party",
+      "PCS Swiss Christian Social Party",
+      "PST Swiss Labour Party/Popular Labour Party/Solidarity",
+      "AVF Socialist Green Alternative and Women Groups",
+      "PES Swiss Ecology Party"
+    ),
+    centrist_parties = c(
+      "PDC Swiss Christian-Democrat Party",
+      "AdI Independent Alliance",
+      "PEV Swiss Pop Evang Party/Swiss Evang Party",
+      "GL Green liberals",
+      "The Centre"
+    ),
+    other = c(
+      "Other Party"
+    ),
+    none = c(
+      "vote for a candidate, not for a party",
+      "for no party",
+      "wouldn't vote"
+    )
+  )
+
 # Transform ESS Data
 merged_data_ess$edulvl_fct_01 <- 
   factor(
@@ -165,7 +238,11 @@ merged_data_ess$gndr_fct <-
   )
 
 
-# Exploratory Data Analysis -----------------------------------------------
+
+
+
+
+# Exploratory Data Analysis: Ideological Divide around Key Swiss I --------
 
 # The threshold for educational divide was reached in the 1990s/2000s, when 25% to 30% of the voting population was university educated
 education_divide %>% 
@@ -178,19 +255,60 @@ education_divide %>%
   geom_hline(yintercept = 0.30) + 
   geom_hline(yintercept = 0.5)
 
-# Gap in Swiss values?
-
-# Opinion of joining EU follows similar trend overtime, but is markedly lower among the non-university educated
+# The university educated are more likely to vote for a left-wing party, the voting intention of the non-university educated is more dispersed
 merged_data_shp %>% 
-  filter(!is.na(opinion_eu) & !is.na(edulvl_fct_02)) %>% 
-  group_by(year, edulvl_fct_02, opinion_eu) %>% 
+  filter(!is.na(pol_prtynxtelec_recoded) & !is.na(edulvl_fct_02)) %>%
+  group_by(year, edulvl_fct_02, pol_prtynxtelec_recoded) %>% 
   summarise(n = n()) %>% 
   group_by(year, edulvl_fct_02) %>% 
   mutate(prct = n / sum(n)) %>% 
-  ggplot(aes(year, prct, group = edulvl_fct_02, color = edulvl_fct_02)) + 
-  geom_line() + 
-  geom_smooth() +
-  facet_wrap(~ opinion_eu)
+  ggplot(aes(year, prct, group = pol_prtynxtelec_recoded, fill = pol_prtynxtelec_recoded)) + 
+  geom_bar(stat = "identity") + 
+  facet_wrap(~ edulvl_fct_02)
+# The ideological orientation of the non-university educated is fairly well distributed around the center, a pattern that is absent among the university educated
+merged_data_shp %>% 
+  filter(!is.na(pol_ideology) & !is.na(edulvl_fct_02)) %>% 
+  ggplot(aes(pol_ideology)) + 
+  geom_density() + 
+  facet_wrap(~ edulvl_fct_02)
+
+# This function plots the opinion of people living in Switzerland by education type
+plot_opinion <- function(data, var, scale_1to10 = FALSE) {
+  
+  if(scale_1to10) {
+    data %>% 
+      filter(!is.na(.data[[var]]) & !is.na(edulvl_fct_02)) %>% 
+      group_by(year, edulvl_fct_02) %>% 
+      summarise(n = n(), mean = mean(.data[[var]])) %>% 
+      ggplot(aes(year, mean, color = edulvl_fct_02)) + 
+      geom_line() + 
+      geom_smooth()
+  } else {
+    data %>% 
+      filter(!is.na(.data[[var]]) & !is.na(edulvl_fct_02)) %>% 
+      group_by(year, edulvl_fct_02, .data[[var]]) %>% 
+      summarise(n = n()) %>% 
+      group_by(year, edulvl_fct_02) %>% 
+      mutate(prct = n / sum(n)) %>% 
+      ggplot(aes(x = year, y = prct, group = edulvl_fct_02, color = edulvl_fct_02)) + 
+      geom_line() + 
+      geom_smooth() +
+      facet_wrap(~ .data[[var]])
+  }
+  
+}
+# Opinion on joining the EU has completely reversed, but support remains higher among the university educated
+plot_opinion(merged_data_shp, "opinion_eu")
+# Opinion of the Swiss army has improved since the early 2000s, but support for a strong army is markedly lower among the university educated
+plot_opinion(merged_data_shp, "opinion_army")
+# Most people believe in giving equal opportunity for foreigners, but support of better opportunities for Swiss citizens is markedly lower among the university educated
+plot_opinion(merged_data_shp, "opinion_foreigners")
+# The university educated tend to be more left wing than the non-university educated 
+plot_opinion(merged_data_shp, "pol_ideology", scale_1to10 = TRUE)
+# Satisfaction with democracy has broadly increased since 2000, but satisfaction is stronger among the university educated
+plot_opinion(merged_data_shp, "sat_democracy", scale_1to10 = TRUE)
+# Trust in the federal govt has broadly improved since the mid-2000s, but trust is stronger among the university educated
+plot_opinion(merged_data_shp, "trust_govt", scale_1to10 = TRUE)
 
 # Gap in democratic views?
  
