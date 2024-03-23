@@ -43,7 +43,7 @@ selected_vars_shp <-
         # political factors
         "p$$p10", # political position, scale 1 (left) to 10 (right)
         "p$$p11", # member of political party
-        "p$$p10", # party of choice if elections tomorrow
+        "p$$p19", # party of choice if elections tomorrow
         "p$$p46", # political position of father
         "p$$p47", # political position of mother
         "p$$p67", # party identification
