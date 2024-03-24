@@ -12,6 +12,7 @@ setwd("/Users/brunoalvesdecarvalho/Desktop/DataWarehouse_20231015_ve01")
 library(tidyverse)
 library(memoise)
 library(haven)
+library(arsenal)
 
 # Load functions
 source("R_Scripts/FunctionRepository_20231016_ve01.R")
@@ -121,8 +122,6 @@ merged_data_shp$pol_influence <-
 
 merged_data_shp$pol_ideology <-
   ifelse(merged_data_shp$`p$$p10` < 0, NA, merged_data_shp$`p$$p10`)
-
-
 
 merged_data_shp$pol_prtynxtelec <-
   factor(
@@ -240,9 +239,7 @@ merged_data_ess$gndr_fct <-
 
 
 
-
-
-# Exploratory Data Analysis: Ideological Divide around Key Swiss I --------
+# Exploratory Data Analysis: Ideological Divide around Key Issues ---------
 
 # The threshold for educational divide was reached in the 1990s/2000s, when 25% to 30% of the voting population was university educated
 education_divide %>% 
@@ -310,7 +307,32 @@ plot_opinion(merged_data_shp, "sat_democracy", scale_1to10 = TRUE)
 # Trust in the federal govt has broadly improved since the mid-2000s, but trust is stronger among the university educated
 plot_opinion(merged_data_shp, "trust_govt", scale_1to10 = TRUE)
 
-# Gap in democratic views?
+# This table calculates summary statistics
+table_01 <-
+  tableby(
+  edulvl_fct_02 ~ 
+    opinion_eu +
+    opinion_army + 
+    opinion_foreigners + 
+    pol_prtynxtelec_recoded +
+    pol_ideology + 
+    pol_influence + 
+    trust_govt + 
+    sat_democracy,
+  data = merged_data_shp,
+  control = tableby.control(
+    test = FALSE,
+    numeric.stats = c("Nmiss", "meansd", "medianq1q3", "iqr"),
+    cat.stats = c("Nmiss", "countpct"),
+    digits = 1
+  )
+)
+summary(table_01, text = TRUE)
+
+
+# Exploratory Data Analysis: Ideological Divide around Democracy ----------
+
+
  
 
 

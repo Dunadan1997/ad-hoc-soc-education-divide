@@ -70,9 +70,9 @@ select_vars_ess <-
     "gndr",
     "cntry",
     "year",
-    # we need age, gender, and country
     
     # political views
+    "prtvthch", # party voted for in last national election
     "lrscale", # placement on left right scale (scale 0 to 10, right)
     "psppsgva", # political system allows people to have a say in what government does
     "stfdem", # how satisfied with the way democracy works in country (scale 0 to 10, extremely satisfied)
