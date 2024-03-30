@@ -389,7 +389,7 @@ for (i in seq_along(var_to_test)) {
 }
 table_test_results
 
-
+merged_data_shp %>% group_by(year, edulvl_fct_02, pol_ideology_recoded) %>% summarise(n = n()) %>% group_by(year, edulvl_fct_02) %>% mutate(pol_ideology_prct = n / sum(n), qa_test = sum(pol_ideology_prct)) %>% filter(pol_ideology_recoded %in% c("left_wing", "right_wing") & !is.na(edulvl_fct_02)) %>% select(year, edulvl_fct_02, pol_ideology_recoded, pol_ideology_prct) %>% spread(key = "pol_ideology_recoded", value = "pol_ideology_prct") %>% mutate(ideological_gap = left_wing - right_wing) %>% ggplot(aes(year, ideological_gap, color = edulvl_fct_02)) + geom_point() + geom_smooth()
 
 
 # Exploratory Data Analysis: Ideological Divide around Democracy ----------
