@@ -54,7 +54,12 @@ selected_vars_shp <-
         "p$$p12", # opinion on Swiss army
         "p$$p02", # satisfaction with democracy (scale 0 to 10, completely satisfied)
         "p$$p03", # feeling about political influence (scale 0 to 10, a very strong influence)
-        "p$$p04" # trust in federal government (scale 0 to 10, full confidence)
+        "p$$p04", # trust in federal government (scale 0 to 10, full confidence)
+        "c$$p01", # handling of coronacrisis, scale 0 to 10 (completely agree)
+        "c$$p02", # restriction of rights, scale 1 to 3
+        "p$$p100", # feelings toward LGBTIQ, homosexuals, scale 0 to 10 (favorable)
+        "p$$p101", # feelings toward LGBTIQ, bisexual, scale 0 to 10 (favorable)
+        "p$$p102" # feelings toward LGBTIQ, transgender, scale 0 to 10 (favorable)
       )
     ), 
     length(1999:2022)
@@ -84,6 +89,11 @@ select_vars_ess <-
     "wpestop", # the will of the people cannot be stopped
     "chpldmi", # best for democracy: government changes politics in response to what most people think 
     "stpldmi", # important for democracy: government sticks to policies regardless of what most people think
+    "impdema", # how important things are for democracy: free and fair elections
+    "impdemb", # how important things are for democracy: people > elite
+    "impdemc", # how important things are for democracy: direct democracy
+    "impdemd", # how important things are for democracy: welfare govt
+    "impdeme", # how important things are for democracy: rule of law
     
     # weights
     "pspwght", # post-stratification weight including design weight

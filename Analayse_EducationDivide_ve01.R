@@ -111,17 +111,37 @@ merged_data_shp$opinion_foreigners <-
     )
   )
 
-merged_data_shp$sat_democracy <-
-  ifelse(merged_data_shp$`p$$p02` < 0, NA, merged_data_shp$`p$$p02`)
+transform_variables <- 
+  c("p$$p02", "p$$p04", "p$$p03", "p$$p10", "c$$p01", "p$$p100", "p$$p101", "p$$p102")
+new_col_names <- 
+  c("sat_democracy", "trust_govt", "pol_influence", "pol_ideology", "handling_covid", "opinion_homosex", "opinion_bisex", "opinion_transgndr")
+for (i in seq_along(transform_variables)) {
+  selected_col_name <- new_col_names[i]
+  merged_data_shp <- 
+    merged_data_shp %>% 
+    mutate(!!selected_col_name := ifelse(merged_data_shp[[transform_variables[i]]] < 0, NA, merged_data_shp[[transform_variables[i]]]))
+}
 
-merged_data_shp$trust_govt <-
-  ifelse(merged_data_shp$`p$$p04` < 0, NA, merged_data_shp$`p$$p04`)
+merged_data_shp$restrictions_covid <-
+  factor(
+    merged_data_shp$`c$$p02`, 
+    levels = c(-2,-1,1,2,3), 
+    labels = c(
+      "no answer",
+      "does not know",
+      "These restrictions were unproblematic, necessary and justified",
+      "These restrictions were problematic, but necessary and justified",
+      "These restrictions were neither necessary nor justified"
+    )
+  ) 
 
-merged_data_shp$pol_influence <-
-  ifelse(merged_data_shp$`p$$p03` < 0, NA, merged_data_shp$`p$$p03`)
-
-merged_data_shp$pol_ideology <-
-  ifelse(merged_data_shp$`p$$p10` < 0, NA, merged_data_shp$`p$$p10`)
+merged_data_shp$restrictions_covid_recoded <-
+  fct_collapse(
+    merged_data_shp$restrictions_covid,
+    "refuse_to_answer" = c("no answer", "does not know"),
+    unproblematic_justified = c("These restrictions were unproblematic, necessary and justified"),
+    problematic_justified = c("These restrictions were problematic, but necessary and justified"),
+    problematic_unjustified = c("These restrictions were neither necessary nor justified"))
 
 merged_data_shp$pol_prtynxtelec <-
   factor(
@@ -194,6 +214,16 @@ merged_data_shp$pol_prtynxtelec_recoded <-
     )
   )
 
+merged_data_shp$pol_ideology_recoded <- 
+  ifelse(
+    merged_data_shp$`p$$p10` > 5, "right_wing", 
+    ifelse(
+      merged_data_shp$`p$$p10` < 5 & merged_data_shp$`p$$p10` >= 0, "left_wing", 
+      ifelse(
+        merged_data_shp$`p$$p10` == 5, "Neutral", NA)
+    )
+  )
+
 # Transform ESS Data
 merged_data_ess$edulvl_fct_01 <- 
   factor(
@@ -235,8 +265,6 @@ merged_data_ess$gndr_fct <-
     levels = c(1,2),
     labels = c("man", "woman")
   )
-
-
 
 
 # Exploratory Data Analysis: Ideological Divide around Key Issues ---------
@@ -314,6 +342,11 @@ table_01 <-
     opinion_eu +
     opinion_army + 
     opinion_foreigners + 
+    opinion_homosex +
+    opinion_bisex +
+    opinion_transgndr +
+    handling_covid +
+    restrictions_covid_recoded +
     pol_prtynxtelec_recoded +
     pol_ideology + 
     pol_influence + 
@@ -328,6 +361,35 @@ table_01 <-
   )
 )
 summary(table_01, text = TRUE)
+
+# The university educated intend to vote more for center and left-wing parties, while the non-university educated intend to vote more for right-wing parties
+vcd::mosaic(~ edulvl_fct_02 + pol_prtynxtelec_recoded, data = subset(merged_data_shp, year == 2020), shade = T)
+# The university educated tend to be over-represented among the people in favor of joining the EU, while the non-university educated tend to be over-represented among those in favor of staying out of the EU
+vcd::mosaic(~ edulvl_fct_02 + opinion_eu, data = subset(merged_data_shp, year == 2020), shade = T)
+# The university educated tend to be over-represented among those in favor of having no army, while the non-university educated tend to be over-represented among those in favor of a strong army
+vcd::mosaic(~ edulvl_fct_02 + opinion_army, data = subset(merged_data_shp, year == 2020), shade = T)
+# The university educated tend to be over-represented among those in favor of giving foreigners equal opportunity, while the non-university educated tend to be over-represented among those in favor of giving special opportunities for Swiss citizens
+vcd::mosaic(~ edulvl_fct_02 + opinion_foreigners, data = subset(merged_data_shp, year == 2020), shade = T)
+# There does not seem to be a divide among the university and non-unversity educated regarding covid restrictions
+vcd::mosaic(~ edulvl_fct_02 + restrictions_covid_recoded, data = subset(merged_data_shp, year == 2020), shade = T)
+
+no_university <- 
+  subset(merged_data_shp, year == 2020 & edulvl_fct_02 != "tertiary_unvrty")
+yes_university <- 
+  subset(merged_data_shp, year == 2020 & edulvl_fct_02 == "tertiary_unvrty")
+
+var_to_test <- c("opinion_homosex", "opinion_bisex", "opinion_transgndr", "pol_ideology")
+hypothesis <- c("greater", "greater", "greater", "less")
+table_test_results <- tibble(row_identifier = "p_value", opinion_homosex = 0, opinion_bisex = 0, opinion_transgndr = 0, pol_ideology = 0)
+
+for (i in seq_along(var_to_test)) {
+  test_results <- t.test(yes_university[[var_to_test[i]]], no_university[[var_to_test[i]]], alternative = hypothesis[i]) 
+  
+  table_test_results[,i] <- test_results$p.value
+}
+table_test_results
+
+
 
 
 # Exploratory Data Analysis: Ideological Divide around Democracy ----------
