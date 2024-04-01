@@ -335,6 +335,49 @@ plot_opinion(merged_data_shp, "sat_democracy", scale_1to10 = TRUE)
 # Trust in the federal govt has broadly improved since the mid-2000s, but trust is stronger among the university educated
 plot_opinion(merged_data_shp, "trust_govt", scale_1to10 = TRUE)
 
+# This plot shows the evolution of the gap in opinion between different types of education
+plot_gap <- function(data, var, value_1, value_2, reverse_gap = FALSE) {
+  
+  new_data <- 
+    data %>% 
+    group_by(year, edulvl_fct_02, .data[[var]]) %>% 
+    summarise(n = n()) %>% 
+    group_by(year, edulvl_fct_02) %>% 
+    mutate(pol_ideology_prct = n / sum(n), qa_test = sum(pol_ideology_prct)) %>% 
+    filter(.data[[var]] %in% c(value_1, value_2) & !is.na(edulvl_fct_02)) %>% 
+    select(year, edulvl_fct_02, .data[[var]], pol_ideology_prct) %>% 
+    spread(key = var, value = "pol_ideology_prct")
+  
+  new_data[,5] <-
+    new_data[,3] - new_data[,4]
+  
+  new_data[,6] <-
+    new_data[,4] - new_data[,3]
+  
+  colnames(new_data)[c(5,6)] <- 
+    c("gap", "gap_reversed")
+  
+  if(reverse_gap == FALSE) {
+    plot_gap <- 
+      new_data %>% 
+      ggplot(aes(year, gap, color = edulvl_fct_02)) + 
+      geom_point() + 
+      geom_smooth()
+  } else if (reverse_gap == TRUE) {
+    plot_gap <- 
+      new_data %>% 
+      ggplot(aes(year, gap_reversed, color = edulvl_fct_02)) + 
+      geom_point() + 
+      geom_smooth()
+  }
+  
+  return(plot_gap)
+  
+}
+
+plot_gap(merged_data_shp, "pol_ideology_recoded", "right_wing", "left_wing")
+plot_gap(merged_data_shp, "pol_prtynxtelec_recoded", "rightwing_parties", "leftwing_parties", reverse_gap = TRUE)
+
 # This table calculates summary statistics
 table_01 <-
   tableby(
@@ -388,8 +431,6 @@ for (i in seq_along(var_to_test)) {
   table_test_results[,i] <- test_results$p.value
 }
 table_test_results
-
-merged_data_shp %>% group_by(year, edulvl_fct_02, pol_ideology_recoded) %>% summarise(n = n()) %>% group_by(year, edulvl_fct_02) %>% mutate(pol_ideology_prct = n / sum(n), qa_test = sum(pol_ideology_prct)) %>% filter(pol_ideology_recoded %in% c("left_wing", "right_wing") & !is.na(edulvl_fct_02)) %>% select(year, edulvl_fct_02, pol_ideology_recoded, pol_ideology_prct) %>% spread(key = "pol_ideology_recoded", value = "pol_ideology_prct") %>% mutate(ideological_gap = left_wing - right_wing) %>% ggplot(aes(year, ideological_gap, color = edulvl_fct_02)) + geom_point() + geom_smooth()
 
 
 # Exploratory Data Analysis: Ideological Divide around Democracy ----------
